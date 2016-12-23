@@ -1,14 +1,21 @@
 package expression
 
-import "github.com/gitql/gitql/sql"
+import (
+	"github.com/gitql/gitql/sql"
+)
 
 type Alias struct {
 	UnaryExpression
-	name string
 }
 
 func NewAlias(child sql.Expression, name string) *Alias {
-	return &Alias{UnaryExpression{child}, name}
+	return &Alias{UnaryExpression{
+		SimpleName: name,
+		Child: child,
+		Copy: func(e sql.Expression) sql.Expression {
+			return NewAlias(e, name)
+		},
+	}}
 }
 
 func (e *Alias) Type() sql.Type {
@@ -20,12 +27,5 @@ func (e *Alias) Eval(row sql.Row) interface{} {
 }
 
 func (e *Alias) Name() string {
-	return e.name
-}
-
-func (e *Alias) TransformUp(f func(sql.Expression) sql.Expression) sql.Expression {
-	c := e.Child.TransformUp(f)
-	n := NewAlias(c, e.name)
-
-	return f(n)
+	return e.SimpleName
 }

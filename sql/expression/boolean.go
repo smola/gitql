@@ -2,29 +2,29 @@ package expression
 
 import "github.com/gitql/gitql/sql"
 
+type BooleanExpression struct{}
+
+func (BooleanExpression) Type() sql.Type {
+	return sql.Boolean
+}
+
 type Not struct {
+	BooleanExpression
 	UnaryExpression
 }
 
 func NewNot(child sql.Expression) *Not {
-	return &Not{UnaryExpression{child}}
-}
-
-func (e Not) Type() sql.Type {
-	return sql.Boolean
+	return &Not{
+		UnaryExpression: UnaryExpression{
+			SimpleName: "not",
+			Child:      child,
+			Copy: func(e sql.Expression) sql.Expression {
+				return NewNot(e)
+			},
+		},
+	}
 }
 
 func (e Not) Eval(row sql.Row) interface{} {
 	return !e.Child.Eval(row).(bool)
-}
-
-func (e Not) Name() string {
-	return "Not(" + e.Child.Name() + ")"
-}
-
-func (e *Not) TransformUp(f func(sql.Expression) sql.Expression) sql.Expression {
-	c := e.UnaryExpression.Child.TransformUp(f)
-	n := &Not{UnaryExpression{c}}
-
-	return f(n)
 }

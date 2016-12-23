@@ -8,6 +8,8 @@ import (
 
 type Comparison struct {
 	BinaryExpression
+	Symbol string
+	Op func(int) bool
 	ChildType sql.Type
 }
 
@@ -15,8 +17,14 @@ func (*Comparison) Type() sql.Type {
 	return sql.Boolean
 }
 
-func (*Comparison) Name() string {
-	return ""
+func (c *Comparison) Name() string {
+	return fmt.Sprintf("%s %s %s", c.Left.Name(), c.Symbol, c.Right.Name())
+}
+
+func (c *Comparison) Eval(row sql.Row) interface{} {
+	a := c.Left.Eval(row)
+	b := c.Right.Eval(row)
+	return c.Op(c.ChildType.Compare(a, b))
 }
 
 type Equals struct {
@@ -26,7 +34,13 @@ type Equals struct {
 func NewEquals(left sql.Expression, right sql.Expression) *Equals {
 	// FIXME: enable this again
 	// checkEqualTypes(left, right)
-	return &Equals{Comparison{BinaryExpression{left, right}, left.Type()}}
+	return &Equals{Comparison{
+		BinaryExpression: BinaryExpression{
+			left, right
+		},
+		ChildType: left.Type(),
+		Symbol:
+	}}
 }
 
 func (e Equals) Eval(row sql.Row) interface{} {
@@ -132,12 +146,6 @@ func (c *LessThanOrEqual) TransformUp(f func(sql.Expression) sql.Expression) sql
 	rc := c.BinaryExpression.Right.TransformUp(f)
 
 	return f(NewLessThanOrEqual(lc, rc))
-}
-
-func checkEqualTypes(a sql.Expression, b sql.Expression) {
-	if a.Resolved() && b.Resolved() && a.Type() != b.Type() {
-		panic(fmt.Errorf("both types should be equal: %v and %v\n", a, b))
-	}
 }
 
 func (e Equals) Name() string {
