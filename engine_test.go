@@ -60,41 +60,43 @@ func TestEngine_Query(t *testing.T) {
 }
 
 func testQuery(t *testing.T, e *gitql.Engine, q string, r [][]interface{}) {
-	assert := require.New(t)
+	t.Run(q, func(t *testing.T) {
+		assert := require.New(t)
 
-	db, err := gosql.Open(driverName, "")
-	assert.NoError(err)
-	defer func() { assert.NoError(db.Close()) }()
+		db, err := gosql.Open(driverName, "")
+		assert.NoError(err)
+		defer func() { assert.NoError(db.Close()) }()
 
-	res, err := db.Query(q)
-	assert.NoError(err)
-	defer func() { assert.NoError(res.Close()) }()
+		res, err := db.Query(q)
+		assert.NoError(err)
+		defer func() { assert.NoError(res.Close()) }()
 
-	cols, err := res.Columns()
-	assert.NoError(err)
-	assert.Equal(len(r[0]), len(cols))
+		cols, err := res.Columns()
+		assert.NoError(err)
+		assert.Equal(len(r[0]), len(cols))
 
-	vals := make([]interface{}, len(cols))
-	valPtrs := make([]interface{}, len(cols))
-	for i := 0; i < len(cols); i++ {
-		valPtrs[i] = &vals[i]
-	}
-
-	i := 0
-	for {
-		if !res.Next() {
-			break
+		vals := make([]interface{}, len(cols))
+		valPtrs := make([]interface{}, len(cols))
+		for i := 0; i < len(cols); i++ {
+			valPtrs[i] = &vals[i]
 		}
 
-		err := res.Scan(valPtrs...)
-		assert.NoError(err)
+		i := 0
+		for {
+			if !res.Next() {
+				break
+			}
 
-		assert.Equal(r[i], vals)
-		i++
-	}
+			err := res.Scan(valPtrs...)
+			assert.NoError(err)
 
-	assert.NoError(res.Err())
-	assert.Equal(len(r), i)
+			assert.Equal(r[i], vals)
+			i++
+		}
+
+		assert.NoError(res.Err())
+		assert.Equal(len(r), i)
+	})
 }
 
 func newEngine(t *testing.T) *gitql.Engine {

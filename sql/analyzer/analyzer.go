@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -54,8 +53,26 @@ func (a *Analyzer) analyzeOnce(n sql.Node) sql.Node {
 
 func (a *Analyzer) validate(n sql.Node) error {
 	if !n.Resolved() {
-		return errors.New("plan is not resolved")
+		inner := mostInnerUnresolved(n)
+		return fmt.Errorf("plan is not resolved: %q", inner)
 	}
 
 	return nil
+}
+
+func mostInnerUnresolved(n sql.Node) sql.Node {
+	if n.Resolved() {
+		return nil
+	}
+
+	for _, c := range n.Children() {
+		if !c.Resolved() {
+			res := mostInnerUnresolved(c)
+			if res != nil {
+				return res
+			}
+		}
+	}
+
+	return n
 }
