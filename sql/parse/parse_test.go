@@ -161,6 +161,14 @@ var fixtures = map[string]sql.Node{
 		[]sql.Expression{},
 		plan.NewUnresolvedTable("t1"),
 	),
+	`SELECT CAST(1 AS CHAR) FROM t1;`: plan.NewGroupBy(
+		[]sql.Expression{
+			expression.NewUnresolvedFunction("count", true,
+				expression.NewStar()),
+		},
+		[]sql.Expression{},
+		plan.NewUnresolvedTable("t1"),
+	),
 }
 
 func TestParse(t *testing.T) {

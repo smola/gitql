@@ -8,6 +8,7 @@ import (
 type Catalog struct {
 	Databases
 	FunctionRegistry
+	*TypeCastRegistry
 }
 
 // NewCatalog returns a new empty Catalog.
@@ -15,6 +16,7 @@ func NewCatalog() *Catalog {
 	return &Catalog{
 		Databases:        Databases{},
 		FunctionRegistry: NewFunctionRegistry(),
+		TypeCastRegistry: NewTypeCastRegistry(),
 	}
 }
 
